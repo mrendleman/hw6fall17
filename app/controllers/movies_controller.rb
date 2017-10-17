@@ -62,7 +62,44 @@ class MoviesController < ApplicationController
   end
   
   def search_tmdb
-    @movies=Movie.find_in_tmdb(params[:search_terms])
+    @search_terms = params[:search_terms];
+    if @search_terms.class == Array # the HAML code "= text_field :search_terms, ''" returns an array containing a string instead of a string
+      @search_terms = @search_terms[0]
+    end
+    none = false;
+    if @search_terms && !@search_terms.empty? && !@search_terms.match(/^\s+$/)
+      @movies=Movie.
+      find_in_tmdb(@search_terms)
+      if @movies && !(@movies.size > 0)
+        none = true;
+      end
+    else
+      none = true;
+    end
+
+    if none
+      flash[:notice] = "No matching movies were found on TMDb"
+      redirect_to movies_path
+    end
+  end
+  
+  def add_tmdb
+    if params[:tmdb_movies].nil? #this means no boxes were checked
+      flash[:notice] = "No movies added"
+      redirect_to movies_path
+    else
+      successful = true;
+      params[:tmdb_movies].keys.each do |id|
+        successful = Movie.create_from_tmdb(id)
+      end
+    
+      if successful
+        flash[:notice] = "Movies successfully added to Rotten Potatoes"
+      else
+        flash[:notice] = "Error adding movies"
+      end
+      redirect_to movies_path
+    end
   end
 
 end
